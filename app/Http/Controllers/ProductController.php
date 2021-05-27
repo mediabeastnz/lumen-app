@@ -12,7 +12,7 @@ class ProductController extends Controller
 
     /**
      * Show all products.
-     * {arameters withStock and page can be passed
+     * Parameters [withStock, sortByStock, available] and [page] can be passed
      * to modify results.
      *
      * @param  Request  $request
@@ -24,7 +24,7 @@ class ProductController extends Controller
         if ($request->input('withStock')) {
             $products = Product::withStockOnHand()->withStockTaken()->orderBy("on_hand")->get();
         } else {
-            $products = Product::get();
+            $products = Product::withStockAvailable()->get();
         }
 
         // If sorting is requested then stock summary will be returned
@@ -34,6 +34,14 @@ class ProductController extends Controller
             } elseif($sortby == 'DESC') {
                 $products = Product::withStockOnHand()->withStockTaken()->orderByDesc("on_hand")->get();
             }
+        }
+
+        // filter the collection by products with stock > 0.
+        if ($request->input('available')) {
+            $products = $products->reject(function ($value, $key) {
+                return $value->on_hand <= 0;
+            });
+            $products->all();
         }
 
         // We could also paginate here if required either using

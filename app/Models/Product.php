@@ -72,7 +72,20 @@ class Product extends Model
     }
 
     /**
-     * Scope a query to exclude products with no stock.
+     * Scope a query to exclude products with no stock
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWithStockAvailable($query)
+    {
+        return $query->withCount(['stocks AS on_hand' => function ($query) {
+            $query->select(DB::raw('SUM(on_hand) as on_hand'));
+        }]);
+    }
+
+    /**
+     * Scope a query to include taken count.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
