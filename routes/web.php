@@ -12,12 +12,16 @@
 */
 
 $router->group(['prefix' => 'api'], function () use ($router) {
-
     $router->get('products', [ 'uses' => 'ProductController@index']);
     $router->get('products/{id}', [ 'uses' => 'ProductController@show']);
     $router->post('products', [ 'uses' => 'ProductController@store']);
     $router->put('products/{id}', [ 'uses' => 'ProductController@update']);
     $router->delete('products/{id}', [ 'uses' => 'ProductController@destroy']);
     $router->post('products/{id}/addstock', [ 'uses' => 'ProductController@addStock']);
-
 });
+
+$router->get('import', function(){
+    return view('import');
+});
+$router->post('import', [ 'uses' => 'ProductController@doImport']);
+

@@ -17,6 +17,7 @@ class Product extends Model
      * @var array
      */
     protected $fillable = [
+        'id',
         'code',
         'name',
         'description',
@@ -42,6 +43,12 @@ class Product extends Model
         'taken' => 'integer'
     ];
 
+    /**
+     * Indicates if the model's ID is auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
 
     /**
      * The accessors to append to the model's array form.
