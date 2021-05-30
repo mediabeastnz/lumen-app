@@ -79,16 +79,18 @@ class Product extends Model
     }
 
     /**
-     * Scope a query to exclude products with no stock
+     * Scope a query to get stock total (onhand-taken)
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeWithStockAvailable($query)
+    public function scopeWithStockTotal($query, $orderby = 'ASC')
     {
-        return $query->withCount(['stocks AS on_hand' => function ($query) {
-            $query->select(DB::raw('SUM(on_hand) as on_hand'));
-        }]);
+        $query->withCount([
+            'stocks as stock' => function($query) {
+                $query->select(DB::raw('SUM(on_hand - taken)'));
+            }
+        ])->orderBy('stock', $orderby);
     }
 
     /**
@@ -134,18 +136,15 @@ class Product extends Model
     public static function getByID($id, $withStock = false)
     {
         try {
-            $product = Product::findOrFail($id);
+            if ($withStock) {
+                $product = Product::withStockTotal()->findOrFail($id);
+            } else {
+                $product = Product::findOrFail($id);
+            }
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 "error" => "Product not found"
             ], 404);
-        }
-
-        if ($withStock) {
-            // Alternative method to get stock summary
-            // scoped query could also be used here
-            // instead of appends/attributes
-            $product->setAppends(['on_hand', 'taken']);
         }
 
         return $product;

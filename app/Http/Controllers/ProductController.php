@@ -22,41 +22,35 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $products = Product::withStockAvailable()->get();
-        $currentPage = $request->input('page') ? $request->input('page') : 1;
+        // get preferred sorting order
+        $sortby = "ASC";
+        if (in_array($request->input('sortByStock'), ["ASC", "DESC"])) {
+            $sortby = $request->input('sortByStock');
+        }
 
         // optional param to include stock summary
         if ($request->input('withStock')) {
             $products = Product::withStockOnHand()
                 ->withStockTaken()
-                ->orderBy("on_hand")
-                ->get();
-        } elseif ($sortby = $request->input('sortByStock')) {
-            if ($sortby == "ASC") {
-                $products = Product::withStockOnHand()
-                    ->withStockTaken()
-                    ->orderBy("on_hand")
-                    ->get();
-            } elseif($sortby == 'DESC') {
-                $products = Product::withStockOnHand()
-                    ->withStockTaken()
-                    ->orderByDesc("on_hand")
-                    ->get();
-            }
-        }
-
-        // filter the collection by products with stock on_hand > 0.
-        if ($request->input('available')) {
-            $products = $products->reject(function ($value, $key) {
-                return $value->on_hand <= 0;
+                ->withStockTotal($sortby)
+                ->cursorPaginate();
+        // only show stock with total > 0
+        } elseif ($request->input('available')) {
+            // using collection pagination here
+            $currentPage = $request->input('page') ? $request->input('page') : 1;
+            $products = Product::withStockTotal($sortby)->get();
+            $products->reject(function ($value, $key) {
+                return $value->stock <= 0;
             });
-            $products->all();
+            $products = $products->forPage($currentPage, 15)->all();
+        // basic stock query
+        } else {
+            $products = Product::orderBy('id', $sortby)->cursorPaginate();
         }
 
         // We could also paginate here if required either using
         // offset method or cursor.
-
-        return response()->json($products->forPage($currentPage, 100), 200);
+        return response()->json($products, 200);
     }
 
     /**
